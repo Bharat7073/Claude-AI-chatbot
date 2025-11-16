@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Chatbot</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .chat-container {
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 500px;
+            height: 90vh;
+            max-height: 700px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            animation: slideUp 0.5s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .bot-avatar {
+            width: 50px;
+            height: 50px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+
+        .bot-info h2 {
+            font-size: 20px;
+            margin-bottom: 4px;
+        }
+
+        .bot-status {
+            font-size: 13px;
+            opacity: 0.9;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: #4ade80;
+            border-radius: 50%;
+            animation: blink 1.5s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #f8fafc;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .chat-messages::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+
+        .message {
+            display: flex;
+            gap: 10px;
+            animation: messageSlide 0.3s ease-out;
+        }
+
+        @keyframes messageSlide {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user {
+            flex-direction: row-reverse;
+        }
+
+        .message-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .message.bot .message-avatar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .message.user .message-avatar {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .message-content {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            line-height: 1.5;
+            font-size: 15px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .message.bot .message-content {
+            background: white;
+            color: #1e293b;
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .message.user .message-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .typing-indicator {
+            display: none;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .typing-indicator.active {
+            display: flex;
+        }
+
+        .typing-dots {
+            background: white;
+            padding: 12px 16px;
+            border-radius: 18px;
+            border-bottom-left-radius: 4px;
+            display: flex;
+            gap: 4px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background: #94a3b8;
+            border-radius: 50%;
+            animation: typingDot 1.4s infinite;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typingDot {
+            0%, 60%, 100% {
+                transform: translateY(0);
+            }
+            30% {
+                transform: translateY(-10px);
+            }
+        }
+
+        .chat-input {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #e2e8f0;
+            display: flex;
+            gap: 10px;
+        }
+
+        .input-wrapper {
+            flex: 1;
+            position: relative;
+        }
+
+        #messageInput {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 24px;
+            font-size: 15px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        #messageInput:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        #sendButton {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+        }
+
+        #sendButton:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        #sendButton:active {
+            transform: scale(0.95);
+        }
+
+        #sendButton:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: scale(1);
+        }
+
+        /* Tablet landscape and small desktops */
+        @media (max-width: 1024px) and (min-width: 769px) {
+            .chat-container {
+                max-width: 600px;
+                height: 85vh;
+            }
+        }
+
+        /* Tablet portrait */
+        @media (max-width: 768px) and (min-width: 481px) {
+            body {
+                padding: 15px;
+            }
+
+            .chat-container {
+                max-width: 100%;
+                height: 90vh;
+                border-radius: 20px;
+            }
+
+            .chat-header {
+                padding: 18px;
+            }
+
+            .bot-avatar {
+                width: 45px;
+                height: 45px;
+                font-size: 22px;
+            }
+
+            .message-content {
+                max-width: 75%;
+                font-size: 14px;
+            }
+        }
+
+        /* Mobile landscape */
+        @media (max-width: 768px) and (orientation: landscape) {
+            .chat-container {
+                height: 100vh;
+                max-height: none;
+            }
+
+            .chat-header {
+                padding: 12px 20px;
+            }
+
+            .bot-avatar {
+                width: 40px;
+                height: 40px;
+                font-size: 20px;
+            }
+
+            .bot-info h2 {
+                font-size: 18px;
+            }
+
+            .chat-messages {
+                padding: 15px;
+            }
+        }
+
+        /* Mobile portrait */
+        @media (max-width: 480px) {
+            body {
+                padding: 0;
+            }
+
+            .chat-container {
+                height: 100vh;
+                height: 100dvh;
+                max-width: 100%;
+                max-height: none;
+                border-radius: 0;
+            }
+
+            .chat-header {
+                padding: 16px;
+            }
+
+            .bot-avatar {
+                width: 42px;
+                height: 42px;
+                font-size: 20px;
+            }
+
+            .bot-info h2 {
+                font-size: 18px;
+            }
+
+            .bot-status {
+                font-size: 12px;
+            }
+
+            .chat-messages {
+                padding: 15px;
+                gap: 10px;
+            }
+
+            .message-avatar {
+                width: 32px;
+                height: 32px;
+                font-size: 16px;
+            }
+
+            .message-content {
+                max-width: 82%;
+                font-size: 14px;
+                padding: 10px 14px;
+            }
+
+            .chat-input {
+                padding: 15px;
+            }
+
+            #messageInput {
+                padding: 10px 14px;
+                font-size: 14px;
+            }
+
+            #sendButton {
+                width: 44px;
+                height: 44px;
+                font-size: 18px;
+            }
+        }
+
+        /* Small phones */
+        @media (max-width: 360px) {
+            .message-content {
+                max-width: 85%;
+                font-size: 13px;
+            }
+
+            .chat-header {
+                padding: 14px;
+            }
+
+            .bot-info h2 {
+                font-size: 16px;
+            }
+        }
+
+        /* Large screens */
+        @media (min-width: 1400px) {
+            .chat-container {
+                max-width: 550px;
+                height: 750px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <div class="bot-avatar">🤖</div>
+            <div class="bot-info">
+                <h2>Smart Assistant</h2>
+                <div class="bot-status">
+                    <span class="status-dot"></span>
+                    Ready
+                </div>
+            </div>
+        </div>
+
+        <div class="chat-messages" id="chatMessages">
+            <div class="message bot">
+                <div class="message-avatar">🤖</div>
+                <div class="message-content">
+                    Hello! I'm your smart assistant. I can answer questions about science, history, math, geography, technology, and much more. Try asking me something!
+                </div>
+            </div>
+        </div>
+
+        <div class="chat-input">
+            <div class="input-wrapper">
+                <input 
+                    type="text" 
+                    id="messageInput" 
+                    placeholder="Ask me anything..."
+                    autocomplete="off"
+                >
+            </div>
+            <button id="sendButton">➤</button>
+        </div>
+    </div>
+
+    <script>
+        // Core Chatbot Classes
+        class User {
+            constructor(id, name) {
+                this.id = id;
+                this.name = name;
+                this.avatar = '👤';
+            }
+        }
+
+        class Bot {
+            constructor(name) {
+                this.name = name;
+                this.avatar = '🤖';
+                this.knowledgeBase = this.initializeKnowledge();
+            }
+
+            initializeKnowledge() {
+                return {
+                    // Greetings
+                    greeting: {
+                        patterns: /^(hi|hello|hey|greetings|good morning|good afternoon|good evening|howdy|sup|yo)/i,
+                        responses: [
+                            "Hello! How can I help you today?",
+                            "Hi there! What would you like to know?",
+                            "Hey! I'm here to answer your questions.",
+                            "Greetings! What can I assist you with?"
+                        ]
+                    },
+                    
+                    // Science
+                    photosynthesis: {
+                        patterns: /(photosynthesis|how plants|plants make food)/i,
+                        responses: ["Photosynthesis is the process by which plants convert light energy (usually from the sun) into chemical energy stored in glucose. Plants use chlorophyll in their leaves to absorb light, then combine carbon dioxide from the air with water from the soil to produce glucose and oxygen. The equation is: 6CO₂ + 6H₂O + light → C₆H₁₂O₆ + 6O₂"]
+                    },
+                    
+                    gravity: {
+                        patterns: /(gravity|why things fall|gravitational)/i,
+                        responses: ["Gravity is a fundamental force of nature that attracts objects with mass toward each other. On Earth, gravity gives weight to objects and causes them to fall toward the ground. Sir Isaac Newton discovered that every object attracts every other object with a force proportional to their masses and inversely proportional to the square of the distance between them. The acceleration due to gravity on Earth is approximately 9.8 m/s²."]
+                    },
+                    
+                    dna: {
+                        patterns: /(dna|genetic|genes|chromosome)/i,
+                        responses: ["DNA (Deoxyribonucleic Acid) is the molecule that carries genetic instructions for life. It's shaped like a double helix and made up of four nucleotide bases: Adenine (A), Thymine (T), Guanine (G), and Cytosine (C). DNA is organized into structures called chromosomes, and segments of DNA that code for specific traits are called genes. Humans have 23 pairs of chromosomes containing about 20,000-25,000 genes."]
+                    },
+                    
+                    atoms: {
+                        patterns: /(atom|atomic|molecule|element)/i,
+                        responses: ["An atom is the smallest unit of matter that retains the properties of an element. Atoms consist of a nucleus containing protons (positive charge) and neutrons (no charge), surrounded by electrons (negative charge) in orbital shells. When atoms bond together, they form molecules. There are 118 known elements, each with a unique number of protons in their nucleus."]
+                    },
+                    
+                    // Math
+                    pythagorean: {
+                        patterns: /(pythagorean|triangle theorem|a²\+b²)/i,
+                        responses: ["The Pythagorean Theorem states that in a right-angled triangle, the square of the length of the hypotenuse (the side opposite the right angle) equals the sum of squares of the other two sides. The formula is: a² + b² = c², where c is the hypotenuse. For example, if the two shorter sides are 3 and 4 units, then 3² + 4² = 9 + 16 = 25, so c = 5 units."]
+                    },
+                    
+                    pi: {
+                        patterns: /(what is pi|value of pi|π)/i,
+                        responses: ["Pi (π) is a mathematical constant representing the ratio of a circle's circumference to its diameter. Its value is approximately 3.14159265359... Pi is an irrational number, meaning its decimal representation never ends or repeats. It's used extensively in geometry, trigonometry, and physics. The symbol π was first used by mathematician William Jones in 1706."]
+                    },
+                    
+                    // History
+                    worldwar2: {
+                        patterns: /(world war 2|ww2|wwii|second world war)/i,
+                        responses: ["World War II (1939-1945) was a global conflict involving most of the world's nations, forming two opposing military alliances: the Allies (led by USA, UK, Soviet Union) and the Axis powers (Germany, Italy, Japan). It started with Germany's invasion of Poland and ended with the atomic bombings of Hiroshima and Nagasaki. The war resulted in an estimated 70-85 million fatalities and led to significant political, economic, and social changes worldwide."]
+                    },
+                    
+                    renaissance: {
+                        patterns: /(renaissance|da vinci|michelangelo|art period)/i,
+                        responses: ["The Renaissance (14th-17th century) was a period of cultural rebirth in Europe, beginning in Italy. It marked a transition from medieval times to modernity, characterized by renewed interest in classical Greek and Roman learning, humanism, and remarkable achievements in art, science, and exploration. Notable figures include Leonardo da Vinci, Michelangelo, Galileo, and Shakespeare. The period saw innovations in painting, sculpture, architecture, literature, and scientific thinking."]
+                    },
+                    
+                    // Geography
+                    earth: {
+                        patterns: /(earth|planet earth|our planet)/i,
+                        responses: ["Earth is the third planet from the Sun and the only known planet to harbor life. It has a diameter of about 12,742 km, orbits the Sun at an average distance of 150 million km, and takes 365.25 days to complete one orbit. Earth's surface is 71% water (oceans) and 29% land. It has one natural satellite (the Moon) and is protected by its atmosphere, which contains oxygen necessary for most life forms."]
+                    },
+                    
+                    mountains: {
+                        patterns: /(highest mountain|mount everest|tallest peak)/i,
+                        responses: ["Mount Everest is Earth's highest mountain above sea level, standing at 8,848.86 meters (29,031.7 feet). Located in the Mahalangur Himal sub-range of the Himalayas on the border between Nepal and Tibet, it was first successfully climbed by Edmund Hillary and Tenzing Norgay in 1953. The mountain continues to grow about 4mm per year due to tectonic plate movement."]
+                    },
+                    
+                    oceans: {
+                        patterns: /(ocean|sea|pacific|atlantic)/i,
+                        responses: ["Earth has five major oceans: Pacific (largest, covering about 46% of ocean surface), Atlantic, Indian, Southern, and Arctic (smallest). Oceans cover approximately 71% of Earth's surface and contain 97% of Earth's water. They play crucial roles in regulating climate, producing oxygen through phytoplankton, and supporting diverse ecosystems. The deepest point is the Mariana Trench in the Pacific Ocean at about 11,000 meters deep."]
+                    },
+                    
+                    // Technology
+                    ai: {
+                        patterns: /(artificial intelligence|machine learning|ai|neural)/i,
+                        responses: ["Artificial Intelligence (AI) is the simulation of human intelligence by machines, especially computer systems. AI includes machine learning (where systems learn from data), natural language processing (understanding human language), computer vision, and robotics. Modern AI uses neural networks inspired by the human brain. Applications include virtual assistants, autonomous vehicles, medical diagnosis, and recommendation systems. AI is rapidly advancing and transforming many industries."]
+                    },
+                    
+                    internet: {
+                        patterns: /(internet|world wide web|www|how internet works)/i,
+                        responses: ["The Internet is a global network of interconnected computers that communicate using standardized protocols (TCP/IP). It originated from ARPANET in the 1960s and became publicly accessible in the 1990s. The World Wide Web (invented by Tim Berners-Lee in 1989) is an information system built on top of the Internet using HTTP protocol and HTML. Data travels through physical cables, fiber optics, and wireless connections between servers, routers, and devices worldwide."]
+                    },
+                    
+                    // Time and Date
+                    time: {
+                        patterns: /(what time|current time|time now)/i,
+                        responses: [`The current time is ${new Date().toLocaleTimeString()}. Note that this is based on your device's local timezone.`]
+                    },
+                    
+                    date: {
+                        patterns: /(what date|today's date|current date)/i,
+                        responses: [`Today's date is ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}.`]
+                    },
+                    
+                    // Math calculations
+                    calculate: {
+                        patterns: /(calculate|what is|solve|\d+\s*[\+\-\*\/]\s*\d+)/i,
+                        responses: [] // Handled by calculation function
+                    },
+                    
+                    // Solar System
+                    solarsystem: {
+                        patterns: /(solar system|planets|sun|mercury|venus|mars|jupiter|saturn|uranus|neptune)/i,
+                        responses: ["Our Solar System consists of the Sun and everything bound to it by gravity: 8 planets (Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, Neptune), 5 dwarf planets (including Pluto), moons, asteroids, comets, and dust. The Sun contains 99.86% of the system's mass. Planets are divided into terrestrial (rocky: Mercury, Venus, Earth, Mars) and gas giants (Jupiter, Saturn, Uranus, Neptune). The Solar System formed about 4.6 billion years ago from a rotating cloud of gas and dust."]
+                    },
+                    
+                    // Programming
+                    programming: {
+                        patterns: /(programming|coding|software|python|javascript|java)/i,
+                        responses: ["Programming is the process of creating instructions (code) that computers can execute to perform specific tasks. Popular programming languages include Python (versatile, beginner-friendly), JavaScript (web development), Java (enterprise applications), C++ (systems programming), and many others. Programming involves problem-solving, logic, algorithms, and data structures. Modern software development also includes version control (Git), testing, debugging, and collaboration tools."]
+                    },
+                    
+                    // Thanks
+                    thanks: {
+                        patterns: /(thank|thanks|appreciate|grateful)/i,
+                        responses: [
+                            "You're welcome! Happy to help! 😊",
+                            "My pleasure! Feel free to ask anything else.",
+                            "Glad I could help! Let me know if you have more questions.",
+                            "Anytime! I'm here to assist you."
+                        ]
+                    },
+                    
+                    // Goodbye
+                    goodbye: {
+                        patterns: /(bye|goodbye|see you|farewell|later|gtg)/i,
+                        responses: [
+                            "Goodbye! Have a great day!",
+                            "See you later! Feel free to come back anytime.",
+                            "Farewell! It was nice chatting with you.",
+                            "Take care! Come back if you need help."
+                        ]
+                    },
+                    
+                    // Help
+                    help: {
+                        patterns: /(help|what can you do|your capabilities|how to use)/i,
+                        responses: ["I can help you with:\n\n• Science (physics, biology, chemistry)\n• Mathematics (calculations, theorems, concepts)\n• History (events, periods, figures)\n• Geography (countries, mountains, oceans)\n• Technology (AI, internet, programming)\n• General knowledge and facts\n• Time and date\n\nJust ask me any question!"]
+                    }
+                };
+            }
+
+            calculateMath(expression) {
+                try {
+                    // Simple math evaluation (safe for basic operations)
+                    const cleaned = expression.replace(/[^0-9+\-*/().\s]/g, '');
+                    const result = Function('"use strict"; return (' + cleaned + ')')();
+                    return `The answer is ${result}.`;
+                } catch {
+                    return null;
+                }
+            }
+
+            generateResponse(userMessage) {
+                const message = userMessage.toLowerCase().trim();
+                
+                // Check for math calculation
+                if (/\d+\s*[\+\-\*\/]\s*\d+/.test(message)) {
+                    const mathResult = this.calculateMath(message);
+                    if (mathResult) return mathResult;
+                }
+                
+                // Check knowledge base
+                for (const [key, data] of Object.entries(this.knowledgeBase)) {
+                    if (data.patterns.test(message)) {
+                        if (data.responses.length > 0) {
+                            return data.responses[Math.floor(Math.random() * data.responses.length)];
+                        }
+                    }
+                }
+                
+                // Default responses for unknown queries
+                const defaultResponses = [
+                    "That's an interesting question! While I may not have specific information about that topic in my current knowledge base, I can help with science, math, history, geography, and technology topics.",
+                    "I'm not sure about that specific topic, but I'd be happy to answer questions about science, mathematics, history, technology, or general knowledge!",
+                    "I don't have detailed information about that right now. Try asking me about scientific concepts, historical events, mathematical problems, or geographical facts!",
+                    "That's outside my current knowledge areas. I specialize in science, math, history, geography, and technology. Ask me something in these areas!"
+                ];
+                
+                return defaultResponses[Math.floor(Math.random() * defaultResponses.length)];
+            }
+        }
+
+        class Message {
+            constructor(sender, content, timestamp) {
+                this.sender = sender;
+                this.content = content;
+                this.timestamp = timestamp || new Date();
+            }
+        }
+
+        class Context {
+            constructor() {
+                this.conversationHistory = [];
+            }
+
+            addMessage(sender, content) {
+                this.conversationHistory.push(new Message(sender, content));
+                if (this.conversationHistory.length > 20) {
+                    this.conversationHistory.shift();
+                }
+            }
+
+            getHistory() {
+                return this.conversationHistory;
+            }
+        }
+
+        // Initialize chatbot components
+        const user = new User(1, 'User');
+        const bot = new Bot('Smart Assistant');
+        const context = new Context();
+
+        // DOM elements
+        const chatMessages = document.getElementById('chatMessages');
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+
+        // Typing indicator
+        function createTypingIndicator() {
+            const indicator = document.createElement('div');
+            indicator.className = 'message bot typing-indicator';
+            indicator.innerHTML = `
+                <div class="message-avatar">${bot.avatar}</div>
+                <div class="typing-dots">
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                </div>
+            `;
+            return indicator;
+        }
+
+        // Add message to chat
+        function addMessage(sender, content) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender === user ? 'user' : 'bot'}`;
+            
+            const avatar = sender === user ? user.avatar : bot.avatar;
+            messageDiv.innerHTML = `
+                <div class="message-avatar">${avatar}</div>
+                <div class="message-content">${escapeHtml(content)}</div>
+            `;
+            
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            context.addMessage(sender, content);
+        }
+
+        // Escape HTML to prevent XSS
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Handle send message
+        function sendMessage() {
+            const text = messageInput.value.trim();
+            if (!text) return;
+
+            // Add user message
+            addMessage(user, text);
+            messageInput.value = '';
+            sendButton.disabled = true;
+            messageInput.disabled = true;
+
+            // Show typing indicator
+            const typingIndicator = createTypingIndicator();
+            chatMessages.appendChild(typingIndicator);
+            setTimeout(() => {
+                typingIndicator.classList.add('active');
+            }, 10);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            // Simulate thinking time
+            setTimeout(() => {
+                typingIndicator.remove();
+                
+                // Generate response
+                const response = bot.generateResponse(text);
+                addMessage(bot, response);
+                
+                sendButton.disabled = false;
+                messageInput.disabled = false;
+                messageInput.focus();
+            }, 800 + Math.random() * 700);
+        }
+
+        // Event listeners
+        sendButton.addEventListener('click', sendMessage);
+
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        messageInput.addEventListener('input', () => {
+            sendButton.disabled = messageInput.value.trim() === '';
+        });
+
+        // Initial state
+        sendButton.disabled = true;
+        messageInput.focus();
+    </script>
+</body>
+</html>
